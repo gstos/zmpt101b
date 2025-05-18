@@ -1,41 +1,42 @@
 #pragma once
 
-#include "esphome/components/sensor/sensor.h"
 #include "esphome/core/component.h"
-
-#if defined(AVR)
-  #define ADC_SCALE 1023.0f
-  #define VREF 5.0f
-#elif defined(ESP8266)
-  #define ADC_SCALE 1023.0f
-  #define VREF 3.3f
-#elif defined(ESP32)
-  #define ADC_SCALE 4095.0f
-  #define VREF 3.3f
-#endif
+#include "esphome/components/sensor/sensor.h"
+#include <Arduino.h>
 
 namespace esphome {
     namespace zmpt101b {
 
+#if defined(AVR)
+#define ADC_SCALE 1023.0f
+#define VREF 5.0f
+#elif defined(ESP8266)
+#define ADC_SCALE 1023.0f
+#define VREF 3.3f
+#elif defined(ESP32)
+#define ADC_SCALE 4095.0f
+#define VREF 3.3f
+#endif
+
         class ZMPT101BSensor : public sensor::Sensor, public PollingComponent {
         public:
-            explicit ZMPT101BSensor(uint8_t pin);
+            ZMPT101BSensor(uint8_t pin, float sensitivity = 509.0f, uint16_t frequency = 50);
 
             void setup() override;
             void update() override;
-            void dump_config() override;
+            float get_setup_priority() const override { return setup_priority::HARDWARE; }
 
-            void set_sensitivity(float sensitivity) { this->sensitivity_ = sensitivity; }
-            void set_frequency(uint16_t frequency) { this->frequency_ = frequency; }
+            void set_sensitivity(float s) { sensitivity_ = s; }
+            void set_frequency(uint16_t f) { frequency_ = f; }
 
         protected:
             uint8_t pin_;
-            float sensitivity_{1.0};
-            uint16_t frequency_{60};
+            float sensitivity_;
+            uint16_t frequency_;
             uint32_t period_us_;
 
             int get_zero_point();
-            float get_rms_voltage(uint8_t loop_count);
+            float get_rms_voltage(uint8_t loop_count = 1);
         };
 
     }  // namespace zmpt101b
