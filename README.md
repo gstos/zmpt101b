@@ -6,7 +6,11 @@ External component for measuring AC RMS voltage using the ZMPT101B analog sensor
 
 ```yaml
 external_components:
-  - source: github://yourusername/zmpt101b-esphome
+  - source:
+      type: git
+      url: https://github.com/gstos/zmpt101b
+      ref: main
+    components: [zmpt101b]
 
 sensor:
   - platform: zmpt101b
