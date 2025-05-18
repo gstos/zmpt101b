@@ -6,23 +6,18 @@ namespace esphome {
 
         static const char *TAG = "zmpt101b";
 
-        ZMPT101BSensor::ZMPT101BSensor(uint8_t pin) : pin_(pin) {}
+        ZMPT101BSensor::ZMPT101BSensor(uint8_t pin, float sensitivity, uint16_t frequency)
+            : pin_(pin), sensitivity_(sensitivity), frequency_(frequency) {}
 
         void ZMPT101BSensor::setup() {
             pinMode(this->pin_, INPUT);
-            this->period_us_ = 1000000UL / this->frequency_;
+            this->period_us_ = 1000000UL / frequency_;
         }
 
         void ZMPT101BSensor::update() {
-            float rms = get_rms_voltage(5);  // average over 5 AC cycles
-            this->publish_state(rms);
-        }
-
-        void ZMPT101BSensor::dump_config() {
-            ESP_LOGCONFIG(TAG, "ZMPT101B Sensor:");
-            ESP_LOGCONFIG(TAG, "  Pin: GPIO%d", this->pin_);
-            ESP_LOGCONFIG(TAG, "  Frequency: %d Hz", this->frequency_);
-            ESP_LOGCONFIG(TAG, "  Sensitivity: %.3f", this->sensitivity_);
+            float Vrms = this->get_rms_voltage();
+            ESP_LOGD(TAG, "Pin %d RMS voltage: %.2f V", pin_, Vrms);
+            this->publish_state(Vrms);
         }
 
         int ZMPT101BSensor::get_zero_point() {
@@ -37,21 +32,24 @@ namespace esphome {
         }
 
         float ZMPT101BSensor::get_rms_voltage(uint8_t loop_count) {
-            float total = 0;
+            double readingVoltage = 0.0;
+
             for (uint8_t i = 0; i < loop_count; i++) {
                 int zero = get_zero_point();
                 uint32_t sum_sq = 0;
                 uint32_t count = 0;
                 uint32_t start = micros();
+
                 while (micros() - start < period_us_) {
                     int32_t val = analogRead(pin_) - zero;
                     sum_sq += val * val;
                     count++;
                 }
-                float vrms = sqrtf((float)sum_sq / count) / 4096.0f * 3.3f * sensitivity_;
-                total += vrms;
+
+                readingVoltage += sqrt((float)sum_sq / count) / ADC_SCALE * VREF * sensitivity_;
             }
-            return total / loop_count;
+
+            return readingVoltage / loop_count;
         }
 
     }  // namespace zmpt101b

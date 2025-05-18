@@ -3,6 +3,17 @@
 #include "esphome/components/sensor/sensor.h"
 #include "esphome/core/component.h"
 
+#if defined(AVR)
+  #define ADC_SCALE 1023.0f
+  #define VREF 5.0f
+#elif defined(ESP8266)
+  #define ADC_SCALE 1023.0f
+  #define VREF 3.3f
+#elif defined(ESP32)
+  #define ADC_SCALE 4095.0f
+  #define VREF 3.3f
+#endif
+
 namespace esphome {
     namespace zmpt101b {
 
